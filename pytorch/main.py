@@ -57,7 +57,8 @@ doTest = args.sink # Only run test, no training
 
 workers = 16
 epochs = 25
-batch_size = torch.cuda.device_count()*100 # Change if out of cuda memory
+#batch_size = torch.cuda.device_count()*100 # Change if out of cuda memory
+batch_size = 5 # no cuda cores on Mac
 
 base_lr = 0.0001
 momentum = 0.9
@@ -76,8 +77,10 @@ def main():
     global args, best_prec1, weight_decay, momentum
 
     model = ITrackerModel()
-    model = torch.nn.DataParallel(model)
-    model.cuda()
+    #model = torch.nn.DataParallel(model)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #model.cuda(device="cpu")
+    model.to(device)
     imSize=(224,224)
     cudnn.benchmark = True   
 
@@ -159,11 +162,15 @@ def train(train_loader, model, criterion,optimizer, epoch):
         
         # measure data loading time
         data_time.update(time.time() - end)
-        imFace = imFace.cuda(async=True)
-        imEyeL = imEyeL.cuda(async=True)
-        imEyeR = imEyeR.cuda(async=True)
-        faceGrid = faceGrid.cuda(async=True)
-        gaze = gaze.cuda(async=True)
+        """
+        # no cuda cores
+        imFace.cuda()
+        imFace = imFace.cuda(non_blocking=True)
+        imEyeL = imEyeL.cuda(non_blocking=True)
+        imEyeR = imEyeR.cuda(non_blocking=True)
+        faceGrid = faceGrid.cuda(non_blocking=True)
+        gaze = gaze.cuda(non_blocking=True)
+        """
         
         imFace = torch.autograd.Variable(imFace, requires_grad = True)
         imEyeL = torch.autograd.Variable(imEyeL, requires_grad = True)
@@ -212,11 +219,13 @@ def validate(val_loader, model, criterion, epoch):
     for i, (row, imFace, imEyeL, imEyeR, faceGrid, gaze) in enumerate(val_loader):
         # measure data loading time
         data_time.update(time.time() - end)
-        imFace = imFace.cuda(async=True)
-        imEyeL = imEyeL.cuda(async=True)
-        imEyeR = imEyeR.cuda(async=True)
-        faceGrid = faceGrid.cuda(async=True)
-        gaze = gaze.cuda(async=True)
+        """
+        imFace = imFace.cuda(non_blocking=True)
+        imEyeL = imEyeL.cuda(non_blocking=True)
+        imEyeR = imEyeR.cuda(non_blocking=True)
+        faceGrid = faceGrid.cuda(non_blocking=True)
+        gaze = gaze.cuda(non_blocking=True)
+        """
         
         imFace = torch.autograd.Variable(imFace, requires_grad = False)
         imEyeL = torch.autograd.Variable(imEyeL, requires_grad = False)
